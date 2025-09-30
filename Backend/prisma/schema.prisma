@@ -14,8 +14,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  VENDOR
+  DISTRIBUTOR
+}
+
 model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  password   String  
+  id           String       @id @default(cuid())
+  email        String       @unique
+  password     String
+  name         String
+  role         UserRole
+  vendor       Vendor?
+  distributor  Distributor?
+  createdAt    DateTime     @default(now())
+}
+
+model Vendor {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id])
+  gstNumber String?
+  company   String?
+}
+
+model Distributor {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  region      String?
+  warehouseId String?
 }
