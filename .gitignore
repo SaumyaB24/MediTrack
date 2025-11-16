@@ -1,22 +1,16 @@
-# Node modules
-node_modules/
+# Backend
+backend/.env
+backend/node_modules/
 
-# Environment variables
-.env
+# Frontend
+frontend/node_modules/
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Build outputs
+# General
 dist/
 build/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE/editor settings
+npm-debug.log*
+yarn-debug.log*
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
