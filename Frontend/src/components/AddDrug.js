@@ -18,6 +18,19 @@ const AddDrug = () => {
       const expiryTimestamp = Math.floor(new Date(expiryDate).getTime() / 1000);
       const tx = await contract.addDrug(drugName, quantity, expiryTimestamp);
       await tx.wait();
+
+      // ⬇️ AFTER tx.wait()
+      await fetch("http://localhost:5000/api/drugs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          drugName,
+          quantity,
+          expiryTimestamp,
+          txHash: tx.hash,
+        }),
+      });
+
       alert(`Drug "${drugName}" (Qty: ${quantity}) added successfully!`);
       setDrugName("");
       setQuantity(1);

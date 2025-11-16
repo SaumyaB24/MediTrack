@@ -18,10 +18,11 @@ import Login from "./components/Login";
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // login state
   const [userAddress, setUserAddress] = useState(null); // optional to store account
+  const [userData, setUserData] = useState(null);
 
   return (
     <Router>
-      <div className="flex h-screen">
+      <div className="flex h-screen bg-transparent">
         {/* Sidebar */}
         <Sidebar />
 
@@ -66,9 +67,11 @@ const App = () => {
                   <Login
                     setIsLoggedIn={setIsLoggedIn}
                     setUserAddress={setUserAddress}
+                    setUserData={setUserData}
                   />
                 }
               />
+
               <Route
                 path="/signup"
                 element={
@@ -84,7 +87,9 @@ const App = () => {
               <Route path="/display-drugs" element={<DisplayDrugs />} />
               <Route
                 path="/profile"
-                element={<Profile userAddress={userAddress} />}
+                element={
+                  <Profile userData={userData} userAddress={userAddress} />
+                }
               />
             </Routes>
           </div>

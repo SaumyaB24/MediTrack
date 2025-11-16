@@ -3,33 +3,47 @@ import { getContract } from "../contract/connection";
 
 const Signup = ({ setIsLoggedIn, setUserAddress }) => {
   const [role, setRole] = useState("Vendor");
-  const [license, setLicense] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [license, setLicense] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
     try {
       setLoading(true);
-      const contract = await getContract();
-      const roleId = role === "Vendor" ? 1 : 2; // match contract Role enum
 
+      // ALWAYS CONNECT METAMASK FIRST
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      const ethAddress = accounts[0];
+
+      // BLOCKCHAIN SIGNUP
+      const contract = await getContract();
+      const roleId = role === "Vendor" ? 1 : 2;
       const tx = await contract.registerUser(roleId);
       await tx.wait();
 
-      // ✅ Update App state after successful signup
-      const accounts = await window.ethereum.request({
-        method: "eth_accounts",
+      // OFF-CHAIN BACKEND SAVE
+      await fetch("http://localhost:5000/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ethAddress,
+          name,
+          email,
+          role,
+        }),
       });
+
       setIsLoggedIn(true);
-      setUserAddress(accounts[0]);
+      setUserAddress(ethAddress);
 
       alert("User registered successfully!");
     } catch (err) {
-      console.error("Error registering user:", err);
-      alert(
-        "Failed to register. Maybe already registered or MetaMask not connected to Hardhat."
-      );
+      console.error("Signup error full object:", err);
+      alert("Signup failed. Ensure MetaMask is connected.");
     } finally {
       setLoading(false);
     }
@@ -38,6 +52,32 @@ const Signup = ({ setIsLoggedIn, setUserAddress }) => {
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4 text-center">Signup</h2>
+
+      {/* NAME */}
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-1">Full Name</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Enter your name"
+          className="w-full border border-gray-300 p-2 rounded"
+        />
+      </div>
+
+      {/* EMAIL */}
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-1">Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter Email"
+          className="w-full border border-gray-300 p-2 rounded"
+        />
+      </div>
+
+      {/* ROLE */}
       <div className="mb-4">
         <label className="block text-gray-700 mb-1">Role</label>
         <select
@@ -50,6 +90,7 @@ const Signup = ({ setIsLoggedIn, setUserAddress }) => {
         </select>
       </div>
 
+      {/* LICENSE */}
       <div className="mb-4">
         <label className="block text-gray-700 mb-1">License Number</label>
         <input
@@ -61,17 +102,7 @@ const Signup = ({ setIsLoggedIn, setUserAddress }) => {
         />
       </div>
 
-      <div className="mb-4">
-        <label className="block text-gray-700 mb-1">Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter Email"
-          className="w-full border border-gray-300 p-2 rounded"
-        />
-      </div>
-
+      {/* PHONE */}
       <div className="mb-4">
         <label className="block text-gray-700 mb-1">Phone Number</label>
         <input

@@ -16,6 +16,18 @@ const TransferDrug = () => {
       const contract = await getContract();
       const tx = await contract.transferDrug(drugId, toAddress, quantity);
       await tx.wait();
+
+      await fetch("http://localhost:5000/api/transfers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          drugId,
+          toAddress,
+          quantity,
+          txHash: tx.hash,
+        }),
+      });
+
       alert(`Drug ID ${drugId} transferred successfully!`);
       setDrugId("");
       setToAddress("");
