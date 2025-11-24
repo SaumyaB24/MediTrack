@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { getContract } from "../contract/connection";
 
 const Login = ({ setIsLoggedIn, setUserAddress, setUserData }) => {
   const [account, setAccount] = useState("");
@@ -9,50 +8,48 @@ const Login = ({ setIsLoggedIn, setUserAddress, setUserData }) => {
   const [errorMsg, setErrorMsg] = useState("");
 
   const connectWallet = async () => {
+    if (!window.ethereum) {
+      setErrorMsg("Please install MetaMask first!");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg("");
+
     try {
-      setLoading(true);
-      setErrorMsg("");
-
-      if (!window.ethereum) {
-        setErrorMsg("Please install MetaMask first!");
-        return;
-      }
-
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
-
       const selectedAccount = accounts[0];
       setAccount(selectedAccount);
 
-      // **1. Fetch role from blockchain**
-      const contract = await getContract();
-      const user = await contract.users(selectedAccount);
-
-      if (!user.exists) {
-        setErrorMsg("Wallet not registered. Please signup first.");
-        return;
-      }
-
-      const roleName = user.role === 1 ? "Vendor" : "Distributor";
-      setRole(roleName);
-
-      // **2. Fetch OFF-CHAIN details (name, email)**
+      // ✅ Call backend API to get user info
       const res = await axios.get(
         `http://localhost:5000/api/users/${selectedAccount}`
       );
 
-      if (res.data.success) {
-        // Save user data in App.js
-        setUserData(res.data.user); // {name, email, walletAddress, role}
+      if (!res.data.success) {
+        setErrorMsg("Wallet not registered. Please signup first.");
+        setLoading(false);
+        return;
       }
 
-      // **3. Update App.js login state**
-      setIsLoggedIn(true);
+      const user = res.data.user; // {name, email, ethAddress, role, ...}
+      setUserData(user);
       setUserAddress(selectedAccount);
+
+      // Normalize role to proper casing
+      const roleName =
+        user.role.toLowerCase() === "vendor" ? "Vendor" : "Distributor";
+      setRole(roleName);
+
+      setIsLoggedIn(true);
     } catch (err) {
-      console.error(err);
-      setErrorMsg("Login failed. Check MetaMask connection or backend.");
+      console.error("Login error:", err);
+      setErrorMsg(
+        err.response?.data?.error ||
+          "Login failed. Check MetaMask connection or backend."
+      );
     } finally {
       setLoading(false);
     }

@@ -3,17 +3,21 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "npx hardhat compile",
+    "deploy:sepolia": "npx hardhat run --network sepolia scripts/deploy.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "@openzeppelin/contracts": "^5.4.0",
     "dotenv": "^17.2.2",
     "hardhat": "^2.26.3"
+  },
+  "dependencies": {
+    "ethers": "^6.15.0"
   }
 }

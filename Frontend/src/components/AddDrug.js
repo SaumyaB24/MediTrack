@@ -1,45 +1,60 @@
 import React, { useState } from "react";
-import { getContract } from "../contract/connection";
 
 const AddDrug = () => {
   const [drugName, setDrugName] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState("1"); // store as string
   const [expiryDate, setExpiryDate] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleAddDrug = async () => {
     if (!drugName) return alert("Please enter a drug name.");
-    if (quantity <= 0) return alert("Quantity must be greater than 0.");
+    if (!quantity || Number(quantity) <= 0)
+      return alert("Quantity must be greater than 0.");
     if (!expiryDate) return alert("Please select expiry date.");
 
+    setLoading(true);
+
     try {
-      setLoading(true);
-      const contract = await getContract();
-      const expiryTimestamp = Math.floor(new Date(expiryDate).getTime() / 1000);
-      const tx = await contract.addDrug(drugName, quantity, expiryTimestamp);
-      await tx.wait();
+      // Convert expiry date to Unix timestamp (string)
+      const expiryTimestamp = Math.floor(
+        new Date(expiryDate).getTime() / 1000
+      ).toString();
+      const manufactureTimestamp = Math.floor(Date.now() / 1000).toString();
 
-      // ⬇️ AFTER tx.wait()
-      await fetch("http://localhost:5000/api/drugs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          drugName,
-          quantity,
-          expiryTimestamp,
-          txHash: tx.hash,
-        }),
-      });
-
-      alert(`Drug "${drugName}" (Qty: ${quantity}) added successfully!`);
-      setDrugName("");
-      setQuantity(1);
-      setExpiryDate("");
-    } catch (err) {
-      console.error("Error adding drug:", err);
-      alert(
-        "Failed to add drug. Make sure your account is a Vendor and connected to Hardhat."
+      // Call backend API
+      const response = await fetch(
+        "http://localhost:5000/api/blockchain/drug/add",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: drugName,
+            quantity: quantity, // string
+            manufactureDate: manufactureTimestamp,
+            expiryDate: expiryTimestamp,
+            userId: "frontend-user",
+          }),
+        }
       );
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Backend error: ${text}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`Drug "${drugName}" added successfully!\nTxHash: ${data.txHash}`);
+        setDrugName("");
+        setQuantity("1");
+        setExpiryDate("");
+      } else {
+        alert("Error adding drug: " + data.error);
+      }
+    } catch (err) {
+      console.error("Failed to add drug via backend:", err);
+      alert("Something went wrong! See console for details.");
     } finally {
       setLoading(false);
     }
@@ -67,7 +82,7 @@ const AddDrug = () => {
           min="1"
           placeholder="Enter quantity"
           value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
+          onChange={(e) => setQuantity(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded"
         />
       </div>

@@ -3,31 +3,32 @@ pragma solidity ^0.8.28;
 
 contract DrugInventory {
 
-    // Roles
+    // ---------- Roles ----------
     enum Role { None, Vendor, Distributor }
 
-    // Drug statuses
+    // ---------- Drug Status ----------
     enum Status { Manufactured, InTransit, Delivered }
 
-    // User struct (minimal on-chain info)
+    // ---------- User ----------
     struct User {
         Role role;
         bool exists;
     }
 
-    // Drug struct with quantity, manufacture & expiry
+    // ---------- Drug ----------
     struct Drug {
         uint id;
         string name;
         address manufacturer;
         address currentOwner;
         Status status;
-        uint quantity;
-        uint manufactureDate; // block.timestamp when added
-        uint expiryDate;      // provided by vendor in UNIX timestamp
+        string quantity;        // stored as string
+        string manufactureDate; // stored as string (e.g., "2025-11-22")
+        string expiryDate;      // stored as string (e.g., "2026-12-31")
     }
 
-    mapping(address => User) public users;   // Ethereum address → Role
+    // ---------- State ----------
+    mapping(address => User) public users;   // Ethereum address → User
     mapping(uint => Drug) public drugs;      // Drug ID → Drug
     uint public drugCount;
 
@@ -57,12 +58,11 @@ contract DrugInventory {
 
     // ---------- Drug Functions ----------
     function addDrug(
-        string memory _name, 
-        uint _quantity, 
-        uint _expiryDate
-    ) public onlyVendor {
-        require(_expiryDate > block.timestamp, "Expiry must be in future");
-
+        string memory _name,
+        string memory _quantity,
+        string memory _manufactureDate,
+        string memory _expiryDate
+    ) public onlyVendor returns (uint) {
         drugs[drugCount] = Drug({
             id: drugCount,
             name: _name,
@@ -70,16 +70,18 @@ contract DrugInventory {
             currentOwner: msg.sender,
             status: Status.Manufactured,
             quantity: _quantity,
-            manufactureDate: block.timestamp,
+            manufactureDate: _manufactureDate,
             expiryDate: _expiryDate
         });
 
         drugCount++;
+
+        return drugCount - 1; // return the ID of the new drug
     }
 
-    function transferDrug(uint _drugId, address _to, uint _quantity) public {
+    function transferDrug(uint _drugId, address _to) public {
+        require(_drugId < drugCount, "Invalid drug ID");
         Drug storage d = drugs[_drugId];
-        require(_quantity > 0 && _quantity <= d.quantity, "Invalid quantity");
 
         if (d.status == Status.Manufactured) {
             require(users[msg.sender].role == Role.Vendor, "Only vendor can ship");
@@ -93,22 +95,28 @@ contract DrugInventory {
         } else {
             revert("Drug already delivered");
         }
-
-        d.quantity -= _quantity;
     }
 
     function getDrug(uint _drugId) public view returns (
-        uint, string memory, address, address, Status, uint, uint, uint
+        uint id,
+        string memory name,
+        address manufacturer,
+        address currentOwner,
+        Status status,
+        string memory quantity,
+        string memory manufactureDate,
+        string memory expiryDate
     ) {
+        require(_drugId < drugCount, "Invalid drug ID");
         Drug memory d = drugs[_drugId];
         return (
-            d.id, 
-            d.name, 
-            d.manufacturer, 
-            d.currentOwner, 
-            d.status, 
-            d.quantity, 
-            d.manufactureDate, 
+            d.id,
+            d.name,
+            d.manufacturer,
+            d.currentOwner,
+            d.status,
+            d.quantity,
+            d.manufactureDate,
             d.expiryDate
         );
     }

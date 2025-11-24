@@ -1,53 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { getContract } from "../contract/connection";
 
 const DisplayDrugs = () => {
   const [drugs, setDrugs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const statusMap = {
+    0: "Manufactured",
+    1: "InTransit",
+    2: "Delivered",
+  };
 
   const fetchDrugs = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const contract = await getContract();
-      const drugCount = await contract.drugCount();
-      const allDrugs = [];
+      const res = await fetch("http://localhost:5000/api/blockchain/drug/all");
 
-      for (let i = 0; i < drugCount; i++) {
-        const drug = await contract.getDrug(i);
-        const ownerAddress = drug[3];
-
-        // Fetch owner name from backend
-        let ownerName = "Unknown Owner";
-        if (ownerAddress !== "0x0000000000000000000000000000000000000000") {
-          try {
-            const res = await fetch(
-              `http://localhost:5000/api/users?ethAddress=${ownerAddress}`
-            );
-            if (res.ok) {
-              const data = await res.json();
-              ownerName = data.name || "Unnamed";
-            }
-          } catch (err) {
-            console.log("Owner not found in DB");
-          }
-        }
-
-        allDrugs.push({
-          id: drug[0].toString(),
-          name: drug[1],
-          manufacturer: drug[2] || "N/A",
-          currentOwner: ownerAddress,
-          ownerName: ownerName, // ⭐ ADD THIS
-          status: ["Manufactured", "InTransit", "Delivered"][drug[4]],
-          quantity: drug[5]?.toString() || "0",
-          manufactureDate: drug[6],
-          expiryDate: drug[7],
-        });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Backend error: ${text}`);
       }
 
-      setDrugs(allDrugs);
+      const data = await res.json();
+
+      if (data.success) {
+        setDrugs(data.drugs); // ✅ Corrected key
+      } else {
+        console.error("Error fetching drugs:", data.error);
+        setDrugs([]);
+      }
     } catch (err) {
-      console.error("Error fetching drugs:", err);
+      console.error("Failed to fetch drugs via backend:", err);
       setDrugs([]);
     } finally {
       setLoading(false);
@@ -86,17 +67,15 @@ const DisplayDrugs = () => {
                        shadow-xl rounded-2xl p-6 transition-all duration-300
                        hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.02]"
           >
-            {/* Accent top bar */}
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-t-2xl"></div>
 
             <h3 className="text-2xl font-bold mb-3 text-gray-900 flex items-center gap-2">
               💊 {drug.name}
             </h3>
 
-            {/* GRID INFO */}
             <div className="space-y-2 text-gray-700">
               <p>
-                <span className="font-semibold">ID:</span> {drug.id}
+                <span className="font-semibold">ID:</span> {drug._id}
               </p>
 
               <p>
@@ -106,7 +85,7 @@ const DisplayDrugs = () => {
 
               <p>
                 <span className="font-semibold">Manufacturer:</span>{" "}
-                {drug.manufacturer !== "N/A"
+                {drug.manufacturer
                   ? `${drug.manufacturer.slice(
                       0,
                       6
@@ -115,34 +94,30 @@ const DisplayDrugs = () => {
               </p>
 
               <p>
-                <span className="font-medium">Current Owner:</span>{" "}
-                <span className="text-blue-700 font-bold">
-                  {drug.ownerName}
-                </span>
-                <br />
-                <span className="text-gray-600 text-sm">
-                  ({drug.currentOwner.slice(0, 6)}...
-                  {drug.currentOwner.slice(-4)})
-                </span>
+                <span className="font-semibold">Current Owner:</span>{" "}
+                {drug.currentOwner
+                  ? `${drug.currentOwner.slice(
+                      0,
+                      6
+                    )}...${drug.currentOwner.slice(-4)}`
+                  : "N/A"}
               </p>
 
-              {/* STATUS BADGE */}
               <p className="font-semibold">
                 Status:{" "}
                 <span
                   className={`px-3 py-1 rounded-full text-white text-sm font-bold ${
-                    drug.status === "Delivered"
+                    statusMap[drug.status] === "Delivered"
                       ? "bg-green-600"
-                      : drug.status === "InTransit"
+                      : statusMap[drug.status] === "InTransit"
                       ? "bg-yellow-600"
                       : "bg-blue-600"
                   }`}
                 >
-                  {drug.status}
+                  {statusMap[drug.status]}
                 </span>
               </p>
 
-              {/* DATES */}
               <p>
                 <span className="font-semibold">Manufacture Date:</span>{" "}
                 {new Date(

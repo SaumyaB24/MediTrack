@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { getContract } from "../contract/connection";
 
 const Profile = ({ isLoggedIn, userAddress }) => {
   const [userInfo, setUserInfo] = useState(null);
@@ -10,43 +9,32 @@ const Profile = ({ isLoggedIn, userAddress }) => {
     try {
       setLoading(true);
 
-      // If logged out → clear
       if (!isLoggedIn || !userAddress) {
         setUserInfo(null);
         setLoading(false);
         return;
       }
 
-      // ---- 1️⃣ Fetch Blockchain Data ----
-      const contract = await getContract();
-      const userOnChain = await contract.users(userAddress);
+      // Fetch user data from backend
+      const res = await axios.get(
+        `http://localhost:5000/api/users/${userAddress}`
+      );
 
-      const roleOnChain = ["None", "Vendor", "Distributor"][userOnChain.role];
-
-      // ---- 2️⃣ Fetch Backend Data ----
-      let userOffChain = null;
-
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/users/${userAddress}`
-        );
-
-        if (res.data.success) {
-          userOffChain = res.data.user;
-        }
-      } catch (err) {
-        console.warn("No off-chain user data found.");
+      if (!res.data.success) {
+        setUserInfo(null);
+        return;
       }
 
-      // ---- 3️⃣ Combine Data ----
+      const user = res.data.user; // { name, email, phone, license, role, exists }
+
       setUserInfo({
-        address: userAddress,
-        role: roleOnChain,
-        exists: userOnChain.exists,
-        name: userOffChain?.name || null,
-        email: userOffChain?.email || null,
-        phone: userOffChain?.phone || null,
-        license: userOffChain?.license || null,
+        address: user.walletAddress || userAddress,
+        role: user.role === "vendor" ? "Vendor" : "Distributor",
+        exists: user.exists ?? true,
+        name: user.name || null,
+        email: user.email || null,
+        phone: user.phone || null,
+        license: user.license || null,
       });
     } catch (err) {
       console.error("Error fetching profile:", err);
@@ -81,28 +69,21 @@ const Profile = ({ isLoggedIn, userAddress }) => {
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4 text-center">Profile</h2>
 
-      {/* Name */}
       {userInfo.name && (
         <p>
           <span className="font-medium">Name:</span> {userInfo.name}
         </p>
       )}
-
-      {/* Email */}
       {userInfo.email && (
         <p>
           <span className="font-medium">Email:</span> {userInfo.email}
         </p>
       )}
-
-      {/* Phone */}
       {userInfo.phone && (
         <p>
           <span className="font-medium">Phone:</span> {userInfo.phone}
         </p>
       )}
-
-      {/* License */}
       {userInfo.license && (
         <p>
           <span className="font-medium">License No:</span> {userInfo.license}
@@ -112,12 +93,10 @@ const Profile = ({ isLoggedIn, userAddress }) => {
       <p>
         <span className="font-medium">Role:</span> {userInfo.role}
       </p>
-
       <p>
         <span className="font-medium">Ethereum Address:</span>{" "}
         {userInfo.address}
       </p>
-
       <p>
         <span className="font-medium">Registered on Blockchain:</span>{" "}
         {userInfo.exists ? "Yes" : "No"}

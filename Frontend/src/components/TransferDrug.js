@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { getContract } from "../contract/connection";
+import axios from "axios";
 
 const TransferDrug = () => {
   const [drugId, setDrugId] = useState("");
@@ -8,33 +8,48 @@ const TransferDrug = () => {
   const [loading, setLoading] = useState(false);
 
   const handleTransfer = async () => {
-    if (!drugId || !toAddress || quantity <= 0)
-      return alert("Enter all details correctly.");
+    const idNum = Number(drugId);
+    const qtyNum = Number(quantity);
+    const toAddr = toAddress.trim();
+
+    if (isNaN(idNum) || idNum < 0) {
+      return alert("Enter a valid Drug ID.");
+    }
+    if (!toAddr || !/^0x[a-fA-F0-9]{40}$/.test(toAddr)) {
+      return alert("Enter a valid Ethereum address.");
+    }
+    if (isNaN(qtyNum) || qtyNum <= 0) {
+      return alert("Quantity must be a positive number.");
+    }
 
     try {
       setLoading(true);
-      const contract = await getContract();
-      const tx = await contract.transferDrug(drugId, toAddress, quantity);
-      await tx.wait();
 
-      await fetch("http://localhost:5000/api/transfers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          drugId,
-          toAddress,
-          quantity,
-          txHash: tx.hash,
-        }),
-      });
+      const res = await axios.post(
+        "http://localhost:5000/api/blockchain/drug/transfer",
+        {
+          drugId: idNum,
+          toAddress: toAddr,
+          quantity: qtyNum,
+        }
+      );
 
-      alert(`Drug ID ${drugId} transferred successfully!`);
-      setDrugId("");
-      setToAddress("");
-      setQuantity(1);
+      if (res.data.success) {
+        alert(
+          `Drug ID ${idNum} transferred successfully!\nTxHash: ${res.data.txHash}`
+        );
+        setDrugId("");
+        setToAddress("");
+        setQuantity(1);
+      } else {
+        alert("Transfer failed: " + res.data.error);
+      }
     } catch (err) {
       console.error("Error transferring drug:", err);
-      alert("Transfer failed. Make sure the account and quantity are correct.");
+      alert(
+        err.response?.data?.error ||
+          "Transfer failed. Check console for details."
+      );
     } finally {
       setLoading(false);
     }
@@ -73,7 +88,7 @@ const TransferDrug = () => {
           min="1"
           placeholder="Enter Quantity"
           value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
+          onChange={(e) => setQuantity(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
       </div>

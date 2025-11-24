@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { getContract } from "../contract/connection";
+import axios from "axios";
 
-const Signup = ({ setIsLoggedIn, setUserAddress }) => {
+const Signup = ({ setIsLoggedIn, setUserAddress, setUserData }) => {
   const [role, setRole] = useState("Vendor");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -10,40 +10,48 @@ const Signup = ({ setIsLoggedIn, setUserAddress }) => {
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
-    try {
-      setLoading(true);
+    if (!name || !email || !license || !phone) {
+      alert("Please fill all required fields.");
+      return;
+    }
 
-      // ALWAYS CONNECT METAMASK FIRST
+    if (!window.ethereum) {
+      alert("Please install MetaMask first!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Connect wallet
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
       const ethAddress = accounts[0];
 
-      // BLOCKCHAIN SIGNUP
-      const contract = await getContract();
-      const roleId = role === "Vendor" ? 1 : 2;
-      const tx = await contract.registerUser(roleId);
-      await tx.wait();
-
-      // OFF-CHAIN BACKEND SAVE
-      await fetch("http://localhost:5000/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ethAddress,
-          name,
-          email,
-          role,
-        }),
+      // Call backend signup API
+      const res = await axios.post("http://localhost:5000/api/users/signup", {
+        ethAddress,
+        name,
+        email,
+        phone,
+        license,
+        role,
       });
 
-      setIsLoggedIn(true);
-      setUserAddress(ethAddress);
-
-      alert("User registered successfully!");
+      if (res.data.success) {
+        alert("User registered successfully!");
+        setIsLoggedIn(true);
+        setUserAddress(ethAddress);
+        setUserData(res.data.user);
+      } else {
+        alert("Signup failed: " + res.data.error);
+      }
     } catch (err) {
-      console.error("Signup error full object:", err);
-      alert("Signup failed. Ensure MetaMask is connected.");
+      console.error("Signup error:", err);
+      alert(
+        err.response?.data?.error || "Signup failed. Check console for details."
+      );
     } finally {
       setLoading(false);
     }
@@ -53,7 +61,6 @@ const Signup = ({ setIsLoggedIn, setUserAddress }) => {
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4 text-center">Signup</h2>
 
-      {/* NAME */}
       <div className="mb-4">
         <label className="block text-gray-700 mb-1">Full Name</label>
         <input
@@ -65,7 +72,6 @@ const Signup = ({ setIsLoggedIn, setUserAddress }) => {
         />
       </div>
 
-      {/* EMAIL */}
       <div className="mb-4">
         <label className="block text-gray-700 mb-1">Email</label>
         <input
@@ -77,7 +83,6 @@ const Signup = ({ setIsLoggedIn, setUserAddress }) => {
         />
       </div>
 
-      {/* ROLE */}
       <div className="mb-4">
         <label className="block text-gray-700 mb-1">Role</label>
         <select
@@ -90,7 +95,6 @@ const Signup = ({ setIsLoggedIn, setUserAddress }) => {
         </select>
       </div>
 
-      {/* LICENSE */}
       <div className="mb-4">
         <label className="block text-gray-700 mb-1">License Number</label>
         <input
@@ -102,7 +106,6 @@ const Signup = ({ setIsLoggedIn, setUserAddress }) => {
         />
       </div>
 
-      {/* PHONE */}
       <div className="mb-4">
         <label className="block text-gray-700 mb-1">Phone Number</label>
         <input
