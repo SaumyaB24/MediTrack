@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -14,11 +15,12 @@ import DisplayDrugs from "./components/DisplayDrugs";
 import Profile from "./components/Profile";
 import Signup from "./components/Signup";
 import Login from "./components/Login";
-
+const API_BASE = process.env.REACT_APP_API_BASE;
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userAddress, setUserAddress] = useState(null);
   const [userData, setUserData] = useState(null);
+  console.log("BACKEND_URL =", API_BASE);
 
   return (
     <Router>
