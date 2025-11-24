@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-
+const API_BASE = process.env.REACT_APP_API_BASE;
 const Signup = ({ setIsLoggedIn, setUserAddress, setUserData }) => {
   const [role, setRole] = useState("Vendor");
   const [name, setName] = useState("");
@@ -30,7 +30,7 @@ const Signup = ({ setIsLoggedIn, setUserAddress, setUserData }) => {
       const ethAddress = accounts[0];
 
       // Call backend signup API
-      const res = await axios.post("http://localhost:5000/api/users/signup", {
+      const res = await axios.post(`${API_BASE}/api/users/signup`, {
         ethAddress,
         name,
         email,

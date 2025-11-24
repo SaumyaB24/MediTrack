@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+const API_BASE = process.env.REACT_APP_API_BASE;
 const DisplayDrugs = () => {
   const [drugs, setDrugs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +12,7 @@ const DisplayDrugs = () => {
   const fetchDrugs = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/blockchain/drug/all");
+      const res = await fetch(`${API_BASE}/api/blockchain/drug/all`);
 
       if (!res.ok) {
         const text = await res.text();

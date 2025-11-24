@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-
+const API_BASE = process.env.REACT_APP_API_BASE;
 const TransferDrug = () => {
   const [drugId, setDrugId] = useState("");
   const [toAddress, setToAddress] = useState("");
@@ -25,14 +25,11 @@ const TransferDrug = () => {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        "http://localhost:5000/api/blockchain/drug/transfer",
-        {
-          drugId: idNum,
-          toAddress: toAddr,
-          quantity: qtyNum,
-        }
-      );
+      const res = await axios.post(`${API_BASE}/api/blockchain/drug/transfer`, {
+        drugId: idNum,
+        toAddress: toAddr,
+        quantity: qtyNum,
+      });
 
       if (res.data.success) {
         alert(

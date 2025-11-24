@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-
+const API_BASE = process.env.REACT_APP_API_BASE;
 const AddDrug = () => {
   const [drugName, setDrugName] = useState("");
   const [quantity, setQuantity] = useState("1"); // store as string
@@ -22,20 +22,17 @@ const AddDrug = () => {
       const manufactureTimestamp = Math.floor(Date.now() / 1000).toString();
 
       // Call backend API
-      const response = await fetch(
-        "http://localhost:5000/api/blockchain/drug/add",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: drugName,
-            quantity: quantity, // string
-            manufactureDate: manufactureTimestamp,
-            expiryDate: expiryTimestamp,
-            userId: "frontend-user",
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE}/api/blockchain/drug/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: drugName,
+          quantity: quantity, // string
+          manufactureDate: manufactureTimestamp,
+          expiryDate: expiryTimestamp,
+          userId: "frontend-user",
+        }),
+      });
 
       if (!response.ok) {
         const text = await response.text();

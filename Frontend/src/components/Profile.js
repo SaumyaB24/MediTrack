@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-
+const API_BASE = process.env.REACT_APP_API_BASE;
 const Profile = ({ isLoggedIn, userAddress }) => {
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,9 +16,7 @@ const Profile = ({ isLoggedIn, userAddress }) => {
       }
 
       // Fetch user data from backend
-      const res = await axios.get(
-        `http://localhost:5000/api/users/${userAddress}`
-      );
+      const res = await axios.get(`${API_BASE}/api/users/${userAddress}`);
 
       if (!res.data.success) {
         setUserInfo(null);

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-
+const API_BASE = process.env.REACT_APP_API_BASE;
 const Login = ({ setIsLoggedIn, setUserAddress, setUserData }) => {
   const [account, setAccount] = useState("");
   const [role, setRole] = useState("");
@@ -24,9 +24,7 @@ const Login = ({ setIsLoggedIn, setUserAddress, setUserData }) => {
       setAccount(selectedAccount);
 
       // ✅ Call backend API to get user info
-      const res = await axios.get(
-        `http://localhost:5000/api/users/${selectedAccount}`
-      );
+      const res = await axios.get(`${API_BASE}/api/users/${selectedAccount}`);
 
       if (!res.data.success) {
         setErrorMsg("Wallet not registered. Please signup first.");
